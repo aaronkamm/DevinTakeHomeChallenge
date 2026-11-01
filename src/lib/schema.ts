@@ -57,7 +57,8 @@ export const refunds = sqliteTable(
       .default(nowMs),
     updatedAt: integer("updated_at", { mode: "timestamp_ms" })
       .notNull()
-      .default(nowMs),
+      .default(nowMs)
+      .$onUpdate(() => new Date()),
   },
   (t) => [
     index("refunds_status_idx").on(t.status),
