@@ -1,0 +1,301 @@
+{
+  "id": "5bdab58e-e777-492c-8ed6-ecc4a2146224",
+  "prevId": "e67924ae-3bd0-4d7b-8321-cca93772ebe3",
+  "version": "6",
+  "dialect": "sqlite",
+  "tables": {
+    "audit_events": {
+      "name": "audit_events",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "refund_id": {
+          "name": "refund_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "action": {
+          "name": "action",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "actor": {
+          "name": "actor",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "actor_role": {
+          "name": "actor_role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "from_status": {
+          "name": "from_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "to_status": {
+          "name": "to_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "amount_cents": {
+          "name": "amount_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch('subsec') * 1000)"
+        }
+      },
+      "indexes": {
+        "audit_events_refund_id_idx": {
+          "name": "audit_events_refund_id_idx",
+          "columns": [
+            "refund_id",
+            "created_at"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "audit_events_refund_id_refunds_id_fk": {
+          "name": "audit_events_refund_id_refunds_id_fk",
+          "tableFrom": "audit_events",
+          "columnsFrom": [
+            "refund_id"
+          ],
+          "tableTo": "refunds",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "restrict"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "audit_events_action_check": {
+          "name": "audit_events_action_check",
+          "value": "\"audit_events\".\"action\" IN ('created', 'approved', 'partially_approved', 'rejected', 'escalated')"
+        },
+        "audit_events_actor_role_check": {
+          "name": "audit_events_actor_role_check",
+          "value": "\"audit_events\".\"actor_role\" IN ('agent', 'manager', 'system')"
+        }
+      }
+    },
+    "refunds": {
+      "name": "refunds",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "customer_name": {
+          "name": "customer_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "customer_email": {
+          "name": "customer_email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "transaction_id": {
+          "name": "transaction_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "original_amount_cents": {
+          "name": "original_amount_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "requested_amount_cents": {
+          "name": "requested_amount_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "approved_amount_cents": {
+          "name": "approved_amount_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "currency": {
+          "name": "currency",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'USD'"
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'pending'"
+        },
+        "risk_score": {
+          "name": "risk_score",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "decision_note": {
+          "name": "decision_note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "decided_by": {
+          "name": "decided_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "decided_at": {
+          "name": "decided_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch('subsec') * 1000)"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch('subsec') * 1000)"
+        }
+      },
+      "indexes": {
+        "refunds_status_idx": {
+          "name": "refunds_status_idx",
+          "columns": [
+            "status"
+          ],
+          "isUnique": false
+        },
+        "refunds_created_at_idx": {
+          "name": "refunds_created_at_idx",
+          "columns": [
+            "created_at"
+          ],
+          "isUnique": false
+        },
+        "refunds_transaction_id_idx": {
+          "name": "refunds_transaction_id_idx",
+          "columns": [
+            "transaction_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "refunds_status_check": {
+          "name": "refunds_status_check",
+          "value": "\"refunds\".\"status\" IN ('pending', 'escalated', 'approved', 'partially_approved', 'rejected')"
+        },
+        "refunds_original_amount_check": {
+          "name": "refunds_original_amount_check",
+          "value": "\"refunds\".\"original_amount_cents\" > 0"
+        },
+        "refunds_requested_amount_check": {
+          "name": "refunds_requested_amount_check",
+          "value": "\"refunds\".\"requested_amount_cents\" > 0 AND \"refunds\".\"requested_amount_cents\" <= \"refunds\".\"original_amount_cents\""
+        },
+        "refunds_approved_amount_check": {
+          "name": "refunds_approved_amount_check",
+          "value": "\"refunds\".\"approved_amount_cents\" IS NULL OR (\"refunds\".\"approved_amount_cents\" > 0 AND \"refunds\".\"approved_amount_cents\" <= \"refunds\".\"requested_amount_cents\")"
+        },
+        "refunds_risk_score_check": {
+          "name": "refunds_risk_score_check",
+          "value": "\"refunds\".\"risk_score\" BETWEEN 0 AND 100"
+        }
+      }
+    }
+  },
+  "views": {},
+  "enums": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  },
+  "internal": {
+    "indexes": {}
+  }
+}

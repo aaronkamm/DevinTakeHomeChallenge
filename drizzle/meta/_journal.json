@@ -15,6 +15,13 @@
       "when": 1793514416840,
       "tag": "0001_audit_events_append_only",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1793514632307,
+      "tag": "0002_refunds_updated_at",
+      "breakpoints": true
     }
   ]
 }

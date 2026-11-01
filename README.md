@@ -4,7 +4,7 @@ Next.js (App Router, TypeScript, Tailwind CSS, ESLint) app.
 
 ## Getting started
 
-Requires Node 20.9+.
+Requires Node 22+.
 
 ```bash
 npm install
