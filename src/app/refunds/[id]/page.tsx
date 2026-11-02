@@ -7,6 +7,13 @@ import { PageShell } from "@/app/_components/page-shell";
 import { HIGH_RISK_THRESHOLD, isHighRisk, RiskScore } from "@/app/_components/risk-score";
 import { STATUS_LABELS, StatusBadge } from "@/app/_components/status-badge";
 import { getCurrentActor, type CurrentActor } from "@/lib/actor";
+import {
+  canDecide,
+  canEscalate,
+  isOpenStatus,
+  permissionError,
+  reviewRequirement,
+} from "@/lib/decision-rules";
 import { formatCents, formatDateTime } from "@/lib/format";
 import { getRefundWithAuditTrail } from "@/lib/queries";
 import type {
@@ -16,6 +23,8 @@ import type {
   PaymentMethod,
   Refund,
 } from "@/lib/schema";
+
+import { DecisionPanel } from "./decision-panel";
 
 type Params = PageProps<"/refunds/[id]">["params"];
 
@@ -212,13 +221,17 @@ function DecisionCard({ refund, actor }: { refund: Refund; actor: CurrentActor }
   if (!hasDecision) {
     return (
       <Card title="Decision Information" description={actingAs}>
-        <EmptyState>
-          No decision has been recorded. This refund is currently{" "}
-          <span className="font-medium text-slate-700">
-            {STATUS_LABELS[refund.status].toLowerCase()}
-          </span>
-          .
-        </EmptyState>
+        {isOpenStatus(refund.status) ? (
+          <OpenDecision refund={refund} actor={actor} />
+        ) : (
+          <EmptyState>
+            No decision has been recorded. This refund is currently{" "}
+            <span className="font-medium text-slate-700">
+              {STATUS_LABELS[refund.status].toLowerCase()}
+            </span>
+            .
+          </EmptyState>
+        )}
       </Card>
     );
   }
@@ -241,6 +254,37 @@ function DecisionCard({ refund, actor }: { refund: Refund; actor: CurrentActor }
         </Field>
       </FieldList>
     </Card>
+  );
+}
+
+function OpenDecision({ refund, actor }: { refund: Refund; actor: CurrentActor }) {
+  const requirement = reviewRequirement(refund);
+  const allowedToDecide = canDecide(refund, actor.role);
+  return (
+    <div className="flex flex-col gap-5">
+      <FieldList>
+        <Field label="Current status">
+          <StatusBadge status={refund.status} />
+        </Field>
+        <Field label="Decided by">
+          {ACTOR_ROLE_LABELS[requirement.role]}
+          {requirement.role === "agent" && " or manager"}
+          {requirement.reason && (
+            <span className="ml-2 text-xs text-slate-500">{requirement.reason}</span>
+          )}
+        </Field>
+      </FieldList>
+      {/* Keyed on status so the form resets after an escalation re-renders the page. */}
+      <DecisionPanel
+        key={refund.status}
+        refundId={refund.id}
+        requestedAmountCents={refund.requestedAmountCents}
+        currency={refund.currency}
+        canDecide={allowedToDecide}
+        canEscalate={canEscalate(refund)}
+        restriction={allowedToDecide ? null : permissionError(refund, actor.role, "approve")}
+      />
+    </div>
   );
 }
 

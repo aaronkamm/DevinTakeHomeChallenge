@@ -1,4 +1,6 @@
-export const HIGH_RISK_THRESHOLD = 60;
+import { HIGH_RISK_SCORE } from "@/lib/decision-rules";
+
+export const HIGH_RISK_THRESHOLD = HIGH_RISK_SCORE;
 
 export function isHighRisk(score: number) {
   return score >= HIGH_RISK_THRESHOLD;
