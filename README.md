@@ -4,7 +4,7 @@ Next.js (App Router, TypeScript, Tailwind CSS, ESLint) app.
 
 ## Getting started
 
-Requires Node 20.9+.
+Requires Node 20.9+ to run the app (Next.js 16). The test suite (`npm test`) needs Node 22.22.2+ or 24.15.0+ — Vitest 5 and jsdom 30 do not support Node 20.
 
 ```bash
 npm install
