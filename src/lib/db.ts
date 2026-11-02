@@ -20,9 +20,13 @@ const MIGRATIONS_FOLDER = path.join(
 
 const globalForDb = globalThis as unknown as { __refundsDb?: Promise<DB> };
 
-async function createDb(): Promise<DB> {
-  fs.mkdirSync(DATABASE_DIR, { recursive: true });
-  const client = await PGlite.create(DATABASE_DIR);
+/**
+ * Opens a database and applies all migrations. Pass a data directory to persist it, or omit it
+ * for a throwaway in-memory database.
+ */
+export async function createDb(dataDir?: string): Promise<DB> {
+  if (dataDir) fs.mkdirSync(dataDir, { recursive: true });
+  const client = await PGlite.create(dataDir);
   const db = drizzle({ client, schema });
   try {
     await migrate(db, { migrationsFolder: MIGRATIONS_FOLDER });
@@ -35,11 +39,16 @@ async function createDb(): Promise<DB> {
 
 /** Returns the shared database, creating the data directory and applying migrations on first access. */
 export function getDb(): Promise<DB> {
-  globalForDb.__refundsDb ??= createDb().catch((err) => {
+  globalForDb.__refundsDb ??= createDb(DATABASE_DIR).catch((err) => {
     globalForDb.__refundsDb = undefined;
     throw err;
   });
   return globalForDb.__refundsDb;
+}
+
+/** Makes `getDb()` return this database instead of the one on disk. For tests; pass null to reset. */
+export function setDb(db: DB | null): void {
+  globalForDb.__refundsDb = db ? Promise.resolve(db) : undefined;
 }
 
 export { schema };

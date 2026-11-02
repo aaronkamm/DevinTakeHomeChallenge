@@ -4,7 +4,7 @@ Next.js (App Router, TypeScript, Tailwind CSS, ESLint) app.
 
 ## Getting started
 
-Requires Node 20.9+.
+Requires Node 20.9+ to run the app (Next.js 16). The test suite (`npm test`) needs Node 22.22.2+ or 24.15.0+ — Vitest 5 and jsdom 30 do not support Node 20.
 
 ```bash
 npm install
@@ -18,6 +18,8 @@ npm run dev        # http://localhost:3000
 - `npm run start` – serve the production build
 - `npm run lint` – ESLint
 - `npm run typecheck` – TypeScript type check
+- `npm test` – run the Vitest suite once (`npm run test:watch` to re-run on change); DB tests use a fresh in-memory PGlite per test with the real migrations, component tests use jsdom + React Testing Library
+- `npm run test:e2e` – placeholder until end-to-end tests are added
 - `npm run db:seed` (alias `npm run seed`) – insert sample refunds + audit events if the `refunds` table is empty
 - `npm run db:generate` – generate a SQL migration in `drizzle/` from `src/lib/schema.ts`
 
