@@ -8,13 +8,28 @@ import { NextResponse, type NextRequest } from "next/server";
  * answers a malformed escape with a plain-text 500. Proxy runs before routing and still sees the
  * raw path, so we catch it here. A rewrite doesn't help, since Next still tries to decode the
  * original path, so it has to be a real redirect.
+ *
+ * We tag the redirect with `?from=app` when the broken link was followed from one of our own pages
+ * (same-origin Referer), so the page's "Go back" button knows going back stays inside the dashboard.
  */
 export function proxy(request: NextRequest) {
   try {
     decodeURIComponent(request.nextUrl.pathname);
     return NextResponse.next();
   } catch {
-    return NextResponse.redirect(new URL("/invalid-link", request.url));
+    const destination = new URL("/invalid-link", request.url);
+    if (cameFromThisApp(request)) destination.searchParams.set("from", "app");
+    return NextResponse.redirect(destination);
+  }
+}
+
+function cameFromThisApp(request: NextRequest): boolean {
+  const referer = request.headers.get("referer");
+  if (!referer) return false;
+  try {
+    return new URL(referer).origin === request.nextUrl.origin;
+  } catch {
+    return false;
   }
 }
 
