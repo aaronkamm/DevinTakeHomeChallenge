@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Build output of the e2e server (NEXT_DIST_DIR in playwright.config.ts).
+    ".next-e2e/**",
   ]),
 ]);
 
