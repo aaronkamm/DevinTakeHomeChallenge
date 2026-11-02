@@ -34,10 +34,12 @@ export default function Home({ searchParams }: PageProps<"/">) {
   );
 }
 
+// Next gives us an array when a param is repeated (?status=a&status=b). We just take the first one.
 function firstValue(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
+// Builds a link back to this page. Page 1 and "All" are the defaults, so we leave them out to keep URLs short.
 function hrefFor(status: RefundStatus | undefined, page = 1) {
   const query: Record<string, string> = {};
   if (status) query.status = status;
@@ -49,10 +51,14 @@ async function RefundsBrowser({ searchParams }: { searchParams: SearchParams }) 
   const params = await searchParams;
   // Refunds are read from the live database on every request, never prerendered.
   await connection();
+  // An unknown status falls back to "All" (with a notice below) rather than throwing.
+  // Bad page values like "abc" or "-1" are handled inside listRefunds, which resets them to 1.
   const rawStatus = firstValue(params.status);
   const status = isRefundStatus(rawStatus) ? rawStatus : undefined;
   const page = Number(firstValue(params.page) ?? 1);
 
+  // If someone lands on a page past the end (old link, data changed), show the last page
+  // instead of an empty table. The URL keeps the old number, but the Prev/Next links are correct.
   let result = await listRefunds({ status, page });
   if (result.page > result.totalPages && result.totalPages > 0) {
     result = await listRefunds({ status, page: result.totalPages });
@@ -213,6 +219,7 @@ function PageLink({
   children: ReactNode;
 }) {
   const className = "rounded-md border border-slate-300 bg-white px-3 py-1.5 font-medium";
+  // At either end we render a plain span instead of a link, so there's nothing to click.
   if (disabled) {
     return (
       <span aria-disabled="true" className={`${className} cursor-not-allowed text-slate-400`}>
