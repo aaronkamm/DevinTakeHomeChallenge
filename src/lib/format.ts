@@ -1,8 +1,14 @@
 /** Formats an integer amount in minor units (cents) as a currency string, e.g. 12345 → "$123.45". */
 export function formatCents(cents: number, currency = "USD"): string {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(
-    cents / 100,
-  );
+  try {
+    return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(
+      cents / 100,
+    );
+  } catch {
+    // The currency column is free text, and Intl throws on malformed codes. Rather than
+    // take down the whole page over one bad row, show the raw amount with the code next to it.
+    return `${(cents / 100).toFixed(2)} ${currency}`;
+  }
 }
 
 const dateTimeFormat = new Intl.DateTimeFormat("en-US", {
