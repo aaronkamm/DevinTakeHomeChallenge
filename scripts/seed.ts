@@ -2,6 +2,7 @@ import { asc, count, eq, sql } from "drizzle-orm";
 import { seed } from "drizzle-seed";
 
 import { getDb, type DB } from "../src/lib/db";
+import { AGENT_APPROVAL_LIMIT_CENTS, HIGH_RISK_SCORE } from "../src/lib/decision-rules";
 import { AGENTS, FRAUD_ANALYSTS, INTAKE, MANAGERS } from "../src/lib/reviewers";
 import {
   auditEvents,
@@ -17,12 +18,6 @@ const SEED = 15;
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
 
-/**
- * Agents decide refunds up to this amount (in the refund's currency) with a risk score
- * below HIGH_RISK_SCORE; anything else goes to a manager.
- */
-const AGENT_APPROVAL_LIMIT_CENTS = 50_000;
-const HIGH_RISK_SCORE = 60;
 
 const STATUS_MIX: Record<RefundStatus, number> = {
   pending: 5,
