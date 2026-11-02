@@ -168,7 +168,7 @@ function Overview({ refund }: { refund: Refund }) {
             {PAYMENT_METHOD_LABELS[refund.paymentMethod]}
           </p>
         </div>
-        <div className="flex flex-col items-start gap-1">
+        <div className="flex flex-col items-start gap-1 sm:items-end">
           <span className="text-xs font-medium uppercase tracking-wide text-slate-500">Status</span>
           <StatusBadge status={refund.status} />
         </div>
