@@ -185,7 +185,9 @@ describe("partiallyApproveRefund", () => {
     });
   });
 
-  it("accepts one cent less than requested", async () => {
+  // Partial approval must be strictly less than the requested amount (amountCents < requested);
+  // the full amount goes through approveRefund.
+  it("accepts one cent less than requested (amountCents < requested)", async () => {
     actAs("agent");
     expect(await partiallyApproveRefund(FIXTURE_IDS.lowRisk, { amountCents: 12_499 })).toEqual({
       ok: true,
@@ -218,11 +220,10 @@ describe("partiallyApproveRefund", () => {
     );
   });
 
-  // A "partial" approval of the full amount would read as a bug, so it must be strictly smaller.
   it.each([
     ["equal to", 12_500],
     ["above", 12_501],
-  ])("refuses an amount %s the requested amount", async (_, amountCents) => {
+  ])("refuses an amount %s the requested amount (not < requested)", async (_, amountCents) => {
     actAs("agent");
     await expectRefused(
       FIXTURE_IDS.lowRisk,
