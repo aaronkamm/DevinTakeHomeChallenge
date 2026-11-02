@@ -155,18 +155,20 @@ function Overview({ refund }: { refund: Refund }) {
       aria-labelledby="refund-overview"
       className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
     >
-      <div className="min-w-0">
-        <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Refund ID</p>
-        <h2 id="refund-overview" className="mt-1 break-all font-mono text-xl font-semibold">
-          {refund.id}
-        </h2>
-        <p className="mt-1 text-sm text-slate-600">
-          {refund.customerName}
-          {refund.merchantName && <> · {refund.merchantName}</>}
-          {" · "}
-          {PAYMENT_METHOD_LABELS[refund.paymentMethod]}
-        </p>
-        <div className="mt-4 flex flex-col items-start gap-1">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Refund ID</p>
+          <h2 id="refund-overview" className="mt-1 break-all font-mono text-xl font-semibold">
+            {refund.id}
+          </h2>
+          <p className="mt-1 text-sm text-slate-600">
+            {refund.customerName}
+            {refund.merchantName && <> · {refund.merchantName}</>}
+            {" · "}
+            {PAYMENT_METHOD_LABELS[refund.paymentMethod]}
+          </p>
+        </div>
+        <div className="flex flex-col items-start gap-1">
           <span className="text-xs font-medium uppercase tracking-wide text-slate-500">Status</span>
           <StatusBadge status={refund.status} />
         </div>
