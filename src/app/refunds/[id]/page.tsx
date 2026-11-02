@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense, type ReactNode } from "react";
 
-import { BackLink } from "@/app/_components/back-link";
+import { PageShell } from "@/app/_components/page-shell";
 import { HIGH_RISK_THRESHOLD, isHighRisk, RiskScore } from "@/app/_components/risk-score";
 import { STATUS_LABELS, StatusBadge } from "@/app/_components/status-badge";
 import { formatCents, formatDateTime } from "@/lib/format";
@@ -41,6 +41,7 @@ const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   escalated: "Escalated",
 };
 
+// Built from the URL alone so the tab title doesn't cost a second database read.
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { id } = await params;
   return { title: `Refund ${id} · Refunds Dashboard` };
@@ -48,26 +49,15 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 
 export default function RefundDetailPage({ params }: PageProps<"/refunds/[id]">) {
   return (
-    <main className="flex flex-1 flex-col bg-slate-50 text-slate-900">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto w-full max-w-7xl px-6 py-5">
-          <BackLink />
-          <p className="mt-3 text-xs font-medium uppercase tracking-wide text-slate-500">
-            Operations
-          </p>
-          <h1 className="text-2xl font-semibold tracking-tight">Refund detail</h1>
-          <p className="mt-1 text-sm text-slate-600">
-            Review the request, its risk profile and the full history of actions taken on it.
-          </p>
-        </div>
-      </header>
-
-      <div className="mx-auto w-full max-w-7xl flex-1 px-6 py-6">
-        <Suspense fallback={<RefundDetailSkeleton />}>
-          <RefundDetail params={params} />
-        </Suspense>
-      </div>
-    </main>
+    <PageShell
+      title="Refund detail"
+      description="Review the request, its risk profile and the full history of actions taken on it."
+      showBackLink
+    >
+      <Suspense fallback={<RefundDetailSkeleton />}>
+        <RefundDetail params={params} />
+      </Suspense>
+    </PageShell>
   );
 }
 
@@ -76,6 +66,8 @@ async function RefundDetail({ params }: { params: Params }) {
   // Refund data is read from the live database on every request, never prerendered.
   await connection();
   const result = await getRefundWithAuditTrail(id);
+  // This runs after the page shell has started streaming, so the response is a 200 with a
+  // noindex tag rather than a real 404. Next documents this; the user still sees not-found.tsx.
   if (!result) notFound();
   const { refund, auditEvents } = result;
 
@@ -206,6 +198,7 @@ function ApprovedAmount({ refund }: { refund: Refund }) {
 }
 
 function DecisionCard({ refund }: { refund: Refund }) {
+  // Any one of these being set means a reviewer has acted, even if the others are still empty.
   const hasDecision =
     refund.decidedAt !== null ||
     refund.decidedBy !== null ||
@@ -257,6 +250,7 @@ function AuditTimeline({ events, currency }: { events: AuditEvent[]; currency: s
     );
   }
 
+  // The query returns events oldest first, so the last one is the current state.
   const latestIndex = events.length - 1;
 
   return (
@@ -357,6 +351,7 @@ function RiskMeter({ score }: { score: number }) {
           className={`h-full rounded-full ${high ? "bg-rose-500" : "bg-emerald-500"}`}
           style={{ width: `${score}%` }}
         />
+        {/* Thin tick at the threshold so you can see how close a score is to needing review. */}
         <div
           aria-hidden="true"
           title={`Review threshold (${HIGH_RISK_THRESHOLD})`}
@@ -368,6 +363,7 @@ function RiskMeter({ score }: { score: number }) {
   );
 }
 
+// The schema requires original > 0, but guard anyway so a bad row can't render "Infinity%".
 function percentOf(part: number, whole: number) {
   if (whole <= 0) return "—";
   return `${Math.round((part / whole) * 100)}%`;
@@ -410,6 +406,7 @@ function Field({
   mono?: boolean;
   wide?: boolean;
 }) {
+  // Treat missing values the same everywhere: show a muted dash instead of a blank gap.
   const isEmpty =
     children === null || children === undefined || children === false || children === "";
   return (

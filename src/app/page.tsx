@@ -2,6 +2,7 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense, type ReactNode } from "react";
 
+import { PageShell } from "@/app/_components/page-shell";
 import { RiskScore } from "@/app/_components/risk-score";
 import { STATUS_LABELS, StatusBadge } from "@/app/_components/status-badge";
 import { formatCents, formatDateTime } from "@/lib/format";
@@ -12,25 +13,14 @@ type SearchParams = PageProps<"/">["searchParams"];
 
 export default function Home({ searchParams }: PageProps<"/">) {
   return (
-    <main className="flex flex-1 flex-col bg-slate-50 text-slate-900">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto w-full max-w-7xl px-6 py-5">
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-            Operations
-          </p>
-          <h1 className="text-2xl font-semibold tracking-tight">Refunds</h1>
-          <p className="mt-1 text-sm text-slate-600">
-            Browse refund requests and select one to review its details.
-          </p>
-        </div>
-      </header>
-
-      <div className="mx-auto w-full max-w-7xl flex-1 px-6 py-6">
-        <Suspense fallback={<RefundsBrowserSkeleton />}>
-          <RefundsBrowser searchParams={searchParams} />
-        </Suspense>
-      </div>
-    </main>
+    <PageShell
+      title="Refunds"
+      description="Browse refund requests and select one to review its details."
+    >
+      <Suspense fallback={<RefundsBrowserSkeleton />}>
+        <RefundsBrowser searchParams={searchParams} />
+      </Suspense>
+    </PageShell>
   );
 }
 
