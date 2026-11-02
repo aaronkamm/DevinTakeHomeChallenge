@@ -297,7 +297,7 @@ function AuditTimeline({ events, currency }: { events: AuditEvent[]; currency: s
               </p>
 
               <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
                     Status
                   </span>
