@@ -5,26 +5,22 @@ import { Suspense, type ReactNode } from "react";
 
 import { PageShell } from "@/app/_components/page-shell";
 import { HIGH_RISK_THRESHOLD, isHighRisk, RiskScore } from "@/app/_components/risk-score";
-import { STATUS_LABELS, StatusBadge } from "@/app/_components/status-badge";
-import { getCurrentActor, type CurrentActor } from "@/lib/actor";
-import {
-  canDecide,
-  canEscalate,
-  isOpenStatus,
-  permissionError,
-  reviewRequirement,
-} from "@/lib/decision-rules";
-import { formatCents, formatDateTime } from "@/lib/format";
+import { StatusBadge } from "@/app/_components/status-badge";
+import { getCurrentActor } from "@/lib/actor";
+import { formatCents } from "@/lib/format";
 import { getRefundWithAuditTrail } from "@/lib/queries";
-import type {
-  ActorRole,
-  AuditAction,
-  AuditEvent,
-  PaymentMethod,
-  Refund,
-} from "@/lib/schema";
+import type { AuditAction, AuditEvent, PaymentMethod, Refund } from "@/lib/schema";
 
-import { DecisionPanel } from "./decision-panel";
+import { DecisionCard } from "./decision-card";
+import {
+  ACTOR_ROLE_LABELS,
+  ApprovedAmount,
+  Card,
+  EmptyState,
+  Field,
+  FieldList,
+  Timestamp,
+} from "./detail-ui";
 
 type Params = PageProps<"/refunds/[id]">["params"];
 
@@ -34,13 +30,6 @@ const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   wire: "Wire transfer",
   atm: "ATM withdrawal",
   account_fee: "Account fee",
-};
-
-const ACTOR_ROLE_LABELS: Record<ActorRole, string> = {
-  agent: "Agent",
-  manager: "Manager",
-  fraud_analyst: "Fraud analyst",
-  system: "System",
 };
 
 const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
@@ -199,95 +188,6 @@ function Overview({ refund }: { refund: Refund }) {
   );
 }
 
-/** `approvedAmountCents` is null both before a decision and after a rejection; label the two cases differently. */
-function ApprovedAmount({ refund }: { refund: Refund }) {
-  if (refund.approvedAmountCents !== null) {
-    return <>{formatCents(refund.approvedAmountCents, refund.currency)}</>;
-  }
-  return <Missing>{refund.status === "rejected" ? "None (rejected)" : "Not decided"}</Missing>;
-}
-
-function DecisionCard({ refund, actor }: { refund: Refund; actor: CurrentActor }) {
-  // Decisions taken here will be recorded under this name and role.
-  const actingAs = `Acting as ${actor.name} · ${ACTOR_ROLE_LABELS[actor.role]}`;
-
-  // Any one of these being set means a reviewer has acted, even if the others are still empty.
-  const hasDecision =
-    refund.decidedAt !== null ||
-    refund.decidedBy !== null ||
-    refund.decisionNote !== null ||
-    refund.approvedAmountCents !== null;
-
-  if (!hasDecision) {
-    return (
-      <Card title="Decision Information" description={actingAs}>
-        {isOpenStatus(refund.status) ? (
-          <OpenDecision refund={refund} actor={actor} />
-        ) : (
-          <EmptyState>
-            No decision has been recorded. This refund is currently{" "}
-            <span className="font-medium text-slate-700">
-              {STATUS_LABELS[refund.status].toLowerCase()}
-            </span>
-            .
-          </EmptyState>
-        )}
-      </Card>
-    );
-  }
-
-  return (
-    <Card title="Decision Information" description={actingAs}>
-      <FieldList columns={2}>
-        <Field label="Decision">
-          <StatusBadge status={refund.status} />
-        </Field>
-        <Field label="Reviewer">{refund.decidedBy}</Field>
-        <Field label="Decided at">
-          {refund.decidedAt && <Timestamp date={refund.decidedAt} />}
-        </Field>
-        <Field label="Approved amount">
-          <ApprovedAmount refund={refund} />
-        </Field>
-        <Field label="Decision note" wide>
-          {refund.decisionNote}
-        </Field>
-      </FieldList>
-    </Card>
-  );
-}
-
-function OpenDecision({ refund, actor }: { refund: Refund; actor: CurrentActor }) {
-  const requirement = reviewRequirement(refund);
-  const allowedToDecide = canDecide(refund, actor.role);
-  return (
-    <div className="flex flex-col gap-5">
-      <FieldList>
-        <Field label="Current status">
-          <StatusBadge status={refund.status} />
-        </Field>
-        <Field label="Decided by">
-          {ACTOR_ROLE_LABELS[requirement.role]}
-          {requirement.role === "agent" && " or manager"}
-          {requirement.reason && (
-            <span className="ml-2 text-xs text-slate-500">{requirement.reason}</span>
-          )}
-        </Field>
-      </FieldList>
-      {/* Keyed on status so the form resets after an escalation re-renders the page. */}
-      <DecisionPanel
-        key={refund.status}
-        refundId={refund.id}
-        requestedAmountCents={refund.requestedAmountCents}
-        currency={refund.currency}
-        canDecide={allowedToDecide}
-        canEscalate={canEscalate(refund)}
-        restriction={allowedToDecide ? null : permissionError(refund, actor.role, "approve")}
-      />
-    </div>
-  );
-}
-
 function AuditTimeline({ events, currency }: { events: AuditEvent[]; currency: string }) {
   if (events.length === 0) {
     return (
@@ -417,56 +317,6 @@ function percentOf(part: number, whole: number) {
   return `${Math.round((part / whole) * 100)}%`;
 }
 
-function Card({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description?: string;
-  children: ReactNode;
-}) {
-  return (
-    <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
-      <header className="flex flex-wrap items-baseline justify-between gap-2 border-b border-slate-200 px-6 py-4">
-        <h2 className="text-base font-semibold">{title}</h2>
-        {description && <p className="text-xs text-slate-500">{description}</p>}
-      </header>
-      <div className="px-6 py-5">{children}</div>
-    </section>
-  );
-}
-
-function FieldList({ children, columns = 2 }: { children: ReactNode; columns?: 1 | 2 }) {
-  return (
-    <dl className={`grid gap-x-8 gap-y-5 ${columns === 2 ? "sm:grid-cols-2" : ""}`}>{children}</dl>
-  );
-}
-
-function Field({
-  label,
-  children,
-  mono = false,
-  wide = false,
-}: {
-  label: string;
-  children: ReactNode;
-  mono?: boolean;
-  wide?: boolean;
-}) {
-  // Treat missing values the same everywhere: show a muted dash instead of a blank gap.
-  const isEmpty =
-    children === null || children === undefined || children === false || children === "";
-  return (
-    <div className={`min-w-0 ${wide ? "sm:col-span-2" : ""}`}>
-      <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</dt>
-      <dd className={`mt-1 break-words text-sm text-slate-900 ${mono ? "font-mono text-xs" : ""}`}>
-        {isEmpty ? <Missing /> : children}
-      </dd>
-    </div>
-  );
-}
-
 function Stat({
   label,
   children,
@@ -487,26 +337,6 @@ function Stat({
         {children}
       </dd>
     </div>
-  );
-}
-
-function Timestamp({ date, className = "" }: { date: Date; className?: string }) {
-  return (
-    <time dateTime={date.toISOString()} className={`whitespace-nowrap ${className}`}>
-      {formatDateTime(date)}
-    </time>
-  );
-}
-
-function Missing({ children = "—" }: { children?: ReactNode }) {
-  return <span className="text-slate-400">{children}</span>;
-}
-
-function EmptyState({ children }: { children: ReactNode }) {
-  return (
-    <p className="rounded-md border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
-      {children}
-    </p>
   );
 }
 

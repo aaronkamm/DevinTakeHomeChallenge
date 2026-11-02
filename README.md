@@ -18,6 +18,8 @@ npm run dev        # http://localhost:3000
 - `npm run start` – serve the production build
 - `npm run lint` – ESLint
 - `npm run typecheck` – TypeScript type check
+- `npm test` – run the Vitest suite once (`npm run test:watch` to re-run on change); DB tests use a fresh in-memory PGlite per test with the real migrations, component tests use jsdom + React Testing Library
+- `npm run test:e2e` – placeholder until end-to-end tests are added
 - `npm run db:seed` (alias `npm run seed`) – insert sample refunds + audit events if the `refunds` table is empty
 - `npm run db:generate` – generate a SQL migration in `drizzle/` from `src/lib/schema.ts`
 
