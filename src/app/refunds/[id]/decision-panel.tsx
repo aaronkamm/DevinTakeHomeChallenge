@@ -66,8 +66,12 @@ export function DecisionPanel({
     let call: () => Promise<DecisionResult>;
     if (action === "partially_approve") {
       const amountCents = parseAmountToCents(amount);
-      if (amountCents === null || amountCents <= 0) {
-        setError("Enter a partial amount greater than zero, e.g. 125.00.");
+      if (amountCents === null) {
+        setError("Enter a valid amount, e.g. 125.00 or 1,250.00.");
+        return;
+      }
+      if (amountCents <= 0) {
+        setError("Enter a partial amount greater than zero.");
         return;
       }
       if (amountCents >= requestedAmountCents) {
