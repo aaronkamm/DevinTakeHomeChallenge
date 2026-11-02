@@ -28,10 +28,10 @@ const INPUT_BASE =
 
 /**
  * Parses a typed amount such as "1,234.5" into cents, or returns null if it isn't a valid amount.
- * Commas are only accepted as thousands separators, so an ambiguous "1,00" is rejected.
+ * Commas are only accepted as real-world thousands separators ("1,000", "1,000,000"), so "1,00" or "0,100" is rejected.
  */
 function parseAmountToCents(value: string): number | null {
-  const match = /^(\d{1,3}(?:,\d{3})+|\d+)(?:\.(\d{0,2}))?$/.exec(value.trim());
+  const match = /^([1-9]\d{0,2}(?:,\d{3})+|\d+)(?:\.(\d{0,2}))?$/.exec(value.trim());
   if (!match) return null;
   const whole = Number(match[1].replace(/,/g, ""));
   const cents = whole * 100 + Number((match[2] ?? "").padEnd(2, "0"));
