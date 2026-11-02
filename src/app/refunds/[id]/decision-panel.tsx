@@ -55,7 +55,8 @@ export function DecisionPanel({
   restriction: string | null;
 }) {
   const [note, setNote] = useState("");
-  const [amount, setAmount] = useState((requestedAmountCents / 100).toFixed(2));
+  const [amount, setAmount] = useState("");
+  const canPartiallyApprove = requestedAmountCents > 1;
   const [error, setError] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<DecisionAction | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -69,9 +70,9 @@ export function DecisionPanel({
         setError("Enter a partial amount greater than zero, e.g. 125.00.");
         return;
       }
-      if (amountCents > requestedAmountCents) {
+      if (amountCents >= requestedAmountCents) {
         setError(
-          `Partial amount can't be more than the requested ${formatCents(requestedAmountCents, currency)}.`,
+          `Partial amount must be less than the requested ${formatCents(requestedAmountCents, currency)}. Use Approve for the full amount.`,
         );
         return;
       }
@@ -126,7 +127,7 @@ export function DecisionPanel({
         />
       </div>
 
-      {canDecide && (
+      {canDecide && canPartiallyApprove && (
         <div>
           <label
             htmlFor="partial-amount"
@@ -142,11 +143,12 @@ export function DecisionPanel({
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               disabled={isPending}
+              placeholder="0.00"
               aria-describedby="partial-amount-hint"
               className={`${INPUT_BASE} w-36 px-3 py-2 tabular-nums`}
             />
             <span id="partial-amount-hint" className="text-xs text-slate-500">
-              Used by Partially approve · up to{" "}
+              Used by Partially approve · must be less than the{" "}
               {formatCents(requestedAmountCents, currency)} requested
             </span>
           </div>
@@ -177,7 +179,8 @@ export function DecisionPanel({
               <button
                 type="button"
                 onClick={() => run("partially_approve")}
-                disabled={isPending}
+                disabled={isPending || !canPartiallyApprove}
+                title={canPartiallyApprove ? undefined : "Nothing smaller than the requested amount"}
                 className={`${BUTTON_BASE} bg-sky-600 text-white hover:bg-sky-700`}
               >
                 {label("partially_approve", "Partially approve")}

@@ -93,8 +93,10 @@ async function decide(
       let approvedAmountCents: number | null = null;
       if (action === "approve") approvedAmountCents = refund.requestedAmountCents;
       if (action === "partially_approve") {
-        if ((amountCents as number) > refund.requestedAmountCents) {
-          return fail("Partial amount can't be more than the requested amount.");
+        if ((amountCents as number) >= refund.requestedAmountCents) {
+          return fail(
+            "Partial amount must be less than the requested amount. Use Approve for the full amount.",
+          );
         }
         approvedAmountCents = amountCents as number;
       }
