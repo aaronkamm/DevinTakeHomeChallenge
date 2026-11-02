@@ -26,11 +26,15 @@ const BUTTON_BASE =
 const INPUT_BASE =
   "rounded-md border border-slate-300 bg-white text-sm text-slate-900 shadow-sm hover:border-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 disabled:bg-slate-50";
 
-/** Parses a typed amount such as "1,234.5" into cents, or returns null if it isn't a valid amount. */
+/**
+ * Parses a typed amount such as "1,234.5" into cents, or returns null if it isn't a valid amount.
+ * Commas are only accepted as thousands separators, so an ambiguous "1,00" is rejected.
+ */
 function parseAmountToCents(value: string): number | null {
-  const match = /^(\d+)(?:\.(\d{0,2}))?$/.exec(value.trim().replace(/,/g, ""));
+  const match = /^(\d{1,3}(?:,\d{3})+|\d+)(?:\.(\d{0,2}))?$/.exec(value.trim());
   if (!match) return null;
-  const cents = Number(match[1]) * 100 + Number((match[2] ?? "").padEnd(2, "0"));
+  const whole = Number(match[1].replace(/,/g, ""));
+  const cents = whole * 100 + Number((match[2] ?? "").padEnd(2, "0"));
   return Number.isSafeInteger(cents) ? cents : null;
 }
 

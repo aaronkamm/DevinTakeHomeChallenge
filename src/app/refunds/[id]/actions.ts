@@ -69,11 +69,10 @@ async function decide(
     if (amountCents <= 0) return fail("Partial amount must be greater than zero.");
   }
 
-  const actor = await getCurrentActor();
-  const db = await getDb();
-
   let result: DecisionResult;
   try {
+    const actor = await getCurrentActor();
+    const db = await getDb();
     result = await db.transaction(async (tx) => {
       // Lock the row so two reviewers can't both decide the same refund.
       const [refund] = await tx
