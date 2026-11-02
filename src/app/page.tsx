@@ -2,12 +2,11 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense, type ReactNode } from "react";
 
+import { RiskScore } from "@/app/_components/risk-score";
 import { STATUS_LABELS, StatusBadge } from "@/app/_components/status-badge";
 import { formatCents, formatDateTime } from "@/lib/format";
 import { isRefundStatus, listRefunds } from "@/lib/queries";
 import { REFUND_STATUSES, type RefundStatus } from "@/lib/schema";
-
-const HIGH_RISK_THRESHOLD = 60;
 
 type SearchParams = PageProps<"/">["searchParams"];
 
@@ -136,16 +135,7 @@ async function RefundsBrowser({ searchParams }: { searchParams: SearchParams }) 
                     <StatusBadge status={refund.status} />
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums">
-                    {refund.riskScore >= HIGH_RISK_THRESHOLD ? (
-                      <span
-                        className="font-semibold text-rose-700"
-                        title={`High risk (≥ ${HIGH_RISK_THRESHOLD})`}
-                      >
-                        {refund.riskScore}
-                      </span>
-                    ) : (
-                      <span className="text-slate-700">{refund.riskScore}</span>
-                    )}
+                    <RiskScore score={refund.riskScore} />
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-slate-600">
                     <time dateTime={refund.createdAt.toISOString()}>
