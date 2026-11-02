@@ -54,8 +54,11 @@ async function RefundsBrowser({ searchParams }: { searchParams: SearchParams }) 
   const status = isRefundStatus(rawStatus) ? rawStatus : undefined;
   const page = Number(firstValue(params.page) ?? 1);
 
-  const { items, page: currentPage, pageSize, total, totalPages } =
-    await listRefunds({ status, page });
+  let result = await listRefunds({ status, page });
+  if (result.page > result.totalPages && result.totalPages > 0) {
+    result = await listRefunds({ status, page: result.totalPages });
+  }
+  const { items, page: currentPage, pageSize, total, totalPages } = result;
 
   const firstShown = total === 0 ? 0 : (currentPage - 1) * pageSize + 1;
   const lastShown = Math.min(currentPage * pageSize, total);
