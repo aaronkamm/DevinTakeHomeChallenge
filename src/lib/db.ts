@@ -7,7 +7,7 @@ import { migrate } from "drizzle-orm/pglite/migrator";
 
 import * as schema from "./schema";
 
-export type DB = PgliteDatabase<typeof schema>;
+export type DB = PgliteDatabase<typeof schema> & { $client: PGlite };
 
 const DATABASE_DIR = path.resolve(
   /* turbopackIgnore: true */

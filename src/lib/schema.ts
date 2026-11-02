@@ -27,8 +27,11 @@ export const AUDIT_ACTIONS = [
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
-export const ACTOR_ROLES = ["agent", "manager", "system"] as const;
+export const ACTOR_ROLES = ["agent", "manager", "fraud_analyst", "system"] as const;
 export type ActorRole = (typeof ACTOR_ROLES)[number];
+
+export const PAYMENT_METHODS = ["card", "ach", "wire", "atm", "account_fee"] as const;
+export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
 const inList = (values: readonly string[]) =>
   sql.raw(values.map((v) => `'${v}'`).join(", "));
@@ -43,6 +46,9 @@ export const refunds = pgTable(
     customerName: text("customer_name").notNull(),
     customerEmail: text("customer_email").notNull(),
     transactionId: text("transaction_id").notNull(),
+    accountId: text("account_id").notNull(),
+    paymentMethod: text("payment_method", { enum: PAYMENT_METHODS }).notNull(),
+    merchantName: text("merchant_name"),
     originalAmountCents: integer("original_amount_cents").notNull(),
     requestedAmountCents: integer("requested_amount_cents").notNull(),
     approvedAmountCents: integer("approved_amount_cents"),
@@ -63,7 +69,12 @@ export const refunds = pgTable(
     index("refunds_status_idx").on(t.status),
     index("refunds_created_at_idx").on(t.createdAt),
     index("refunds_transaction_id_idx").on(t.transactionId),
+    index("refunds_account_id_idx").on(t.accountId),
     check("refunds_status_check", sql`${t.status} IN (${inList(REFUND_STATUSES)})`),
+    check(
+      "refunds_payment_method_check",
+      sql`${t.paymentMethod} IN (${inList(PAYMENT_METHODS)})`,
+    ),
     check("refunds_original_amount_check", sql`${t.originalAmountCents} > 0`),
     check(
       "refunds_requested_amount_check",
