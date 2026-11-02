@@ -24,7 +24,12 @@ async function createDb(): Promise<DB> {
   fs.mkdirSync(DATABASE_DIR, { recursive: true });
   const client = await PGlite.create(DATABASE_DIR);
   const db = drizzle({ client, schema });
-  await migrate(db, { migrationsFolder: MIGRATIONS_FOLDER });
+  try {
+    await migrate(db, { migrationsFolder: MIGRATIONS_FOLDER });
+  } catch (err) {
+    await client.close();
+    throw err;
+  }
   return db;
 }
 
