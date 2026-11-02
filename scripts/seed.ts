@@ -16,7 +16,10 @@ const SEED = 15;
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
 
-/** Agents decide refunds up to this amount with a risk score below HIGH_RISK_SCORE; anything else goes to a manager. */
+/**
+ * Agents decide refunds up to this amount (in the refund's currency) with a risk score
+ * below HIGH_RISK_SCORE; anything else goes to a manager.
+ */
 const AGENT_APPROVAL_LIMIT_CENTS = 50_000;
 const HIGH_RISK_SCORE = 60;
 
@@ -157,7 +160,10 @@ const REASON_PROFILES: readonly ReasonProfile[] = [
 ];
 const PROFILE_BY_REASON = new Map(REASON_PROFILES.map((p) => [p.reason, p]));
 // Every reason appears at least twice; drizzle-seed shuffles the order.
-const REASONS = Array.from({ length: REFUND_COUNT }, (_, i) => REASON_PROFILES[i % REASON_PROFILES.length].reason);
+const REASONS = Array.from(
+  { length: REFUND_COUNT },
+  (_, i) => REASON_PROFILES[i % REASON_PROFILES.length].reason,
+);
 
 const AGENTS = ["Maya Chen", "Jordan Lee", "Priya Patel", "Diego Alvarez"];
 const MANAGERS = ["Sam Okafor", "Rachel Kim"];
@@ -171,12 +177,17 @@ const RAW_RISK: [number, number] = [0, 100];
 const pick = <T>(list: readonly T[], i: number) => list[i % list.length];
 const pad = (n: number) => String(n).padStart(4, "0");
 
-// Mostly USD accounts, plus a few EUR/GBP/CAD accounts.
-const CURRENCIES = Array.from({ length: REFUND_COUNT }, (_, i) => (i < 18 ? "USD" : pick(["EUR", "GBP", "CAD"], i)));
+// Mostly USD accounts, plus two each of EUR/GBP/CAD.
+const FOREIGN_CURRENCIES = ["EUR", "GBP", "CAD"];
+const CURRENCIES = Array.from({ length: REFUND_COUNT }, (_, i) =>
+  i < REFUND_COUNT - 2 * FOREIGN_CURRENCIES.length ? "USD" : pick(FOREIGN_CURRENCIES, i),
+);
 const rescale = (raw: number, [rawMin, rawMax]: [number, number], [min, max]: [number, number]) =>
   Math.round(min + ((raw - rawMin) / (rawMax - rawMin)) * (max - min));
 const roundTo = (cents: number, step = 1) => Math.max(step, Math.floor(cents / step) * step);
 const money = (cents: number, currency: string) => `${(cents / 100).toFixed(2)} ${currency}`;
+const emailFor = (name: string) =>
+  `${name.toLowerCase().replace(/[^a-z]+/g, ".").replace(/^\.+|\.+$/g, "")}@example.com`;
 
 type Actor = { name: string; role: ActorRole };
 type Step = {
@@ -189,11 +200,13 @@ type Step = {
 /** Why a refund needs review above agent level, or null if an agent may decide it. */
 function escalationFor(refund: Refund, profile: ReasonProfile, i: number) {
   if (profile.fraudReview) {
-    return { reviewer: { name: pick(FRAUD_ANALYSTS, i), role: "fraud_analyst" } as Actor, note: "Possible card fraud; routed to fraud review" };
+    const analyst: Actor = { name: pick(FRAUD_ANALYSTS, i), role: "fraud_analyst" };
+    return { reviewer: analyst, note: "Possible card fraud; routed to fraud review" };
   }
   const manager: Actor = { name: pick(MANAGERS, i), role: "manager" };
   if (refund.requestedAmountCents > AGENT_APPROVAL_LIMIT_CENTS) {
-    return { reviewer: manager, note: `Amount above ${money(AGENT_APPROVAL_LIMIT_CENTS, refund.currency)} agent approval limit` };
+    const limit = money(AGENT_APPROVAL_LIMIT_CENTS, refund.currency);
+    return { reviewer: manager, note: `Amount above ${limit} agent approval limit` };
   }
   if (refund.riskScore >= HIGH_RISK_SCORE) {
     return { reviewer: manager, note: `High risk score (${refund.riskScore}); needs manager review` };
@@ -201,10 +214,11 @@ function escalationFor(refund: Refund, profile: ReasonProfile, i: number) {
   return null;
 }
 
+/** Escalations an agent raises by judgement when no routing rule applies. */
 const MANUAL_ESCALATION_NOTES = [
-  "Repeat refund request on this account; needs manager review",
-  "Customer disputes earlier decision; second review requested",
   "Merchant evidence conflicts with customer claim",
+  "Customer documentation incomplete; needs manager review",
+  "Transaction details don't match card network records",
 ] as const;
 
 /** Builds the transition history that ends in the refund's final status. */
@@ -218,7 +232,9 @@ function buildTrail(refund: Refund, profile: ReasonProfile, i: number): Step[] {
     return [{ status: "escalated", actor: agent, note }];
   }
 
-  const prefix: Step[] = escalation ? [{ status: "escalated", actor: agent, note: escalation.note }] : [];
+  const prefix: Step[] = escalation
+    ? [{ status: "escalated", actor: agent, note: escalation.note }]
+    : [];
   const decider = escalation?.reviewer ?? agent;
   const requested = refund.requestedAmountCents;
 
@@ -258,7 +274,7 @@ async function seedRefunds(db: DB) {
             isUnique: true,
           }),
           customerName: f.fullName(),
-          customerEmail: f.email(),
+          customerEmail: f.default({ defaultValue: "" }),
           transactionId: f.valuesFromArray({
             values: STATUSES.map((_, i) => `txn_${pad(8100 + i * 37)}`),
             isUnique: true,
@@ -299,7 +315,10 @@ async function seedRefunds(db: DB) {
       const profile = PROFILE_BY_REASON.get(row.reason);
       if (!profile) throw new Error(`No profile for reason "${row.reason}"`);
 
-      const original = roundTo(rescale(row.originalAmountCents, RAW_AMOUNT, profile.amountCents), profile.roundToCents);
+      const original = roundTo(
+        rescale(row.originalAmountCents, RAW_AMOUNT, profile.amountCents),
+        profile.roundToCents,
+      );
       const requested = profile.partialRequest
         ? Math.max(1, Math.round((original * (20 + (i % 5) * 10)) / 100))
         : original;
@@ -310,7 +329,7 @@ async function seedRefunds(db: DB) {
         originalAmountCents: original,
         requestedAmountCents: requested,
         riskScore: rescale(row.riskScore, RAW_RISK, profile.riskScore),
-        customerEmail: `${row.customerName.toLowerCase().replace(/[^a-z]+/g, ".")}@example.com`,
+        customerEmail: emailFor(row.customerName),
       };
 
       const createdBy: Actor =
@@ -338,7 +357,7 @@ async function seedRefunds(db: DB) {
 
       const trail = buildTrail(refund, profile, i);
       for (const [s, step] of trail.entries()) {
-        // Cap each step a minute per remaining step before now, so timestamps stay strictly increasing.
+        // Cap each step a minute per remaining step before now, so timestamps strictly increase.
         at = Math.min(now - (trail.length - s) * 60_000, at + (2 + ((i + s) % 5) * 3) * HOUR_MS);
         events.push({
           refundId: refund.id,
