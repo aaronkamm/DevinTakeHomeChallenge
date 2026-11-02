@@ -6,6 +6,7 @@ import { Suspense, type ReactNode } from "react";
 import { PageShell } from "@/app/_components/page-shell";
 import { HIGH_RISK_THRESHOLD, isHighRisk, RiskScore } from "@/app/_components/risk-score";
 import { STATUS_LABELS, StatusBadge } from "@/app/_components/status-badge";
+import { getCurrentActor, type CurrentActor } from "@/lib/actor";
 import { formatCents, formatDateTime } from "@/lib/format";
 import { getRefundWithAuditTrail } from "@/lib/queries";
 import type {
@@ -65,7 +66,7 @@ async function RefundDetail({ params }: { params: Params }) {
   const { id } = await params;
   // Refund data is read from the live database on every request, never prerendered.
   await connection();
-  const result = await getRefundWithAuditTrail(id);
+  const [result, actor] = await Promise.all([getRefundWithAuditTrail(id), getCurrentActor()]);
   // This runs after the page shell has started streaming, so the response is a 200 with a
   // noindex tag rather than a real 404. Next documents this; the user still sees not-found.tsx.
   if (!result) notFound();
@@ -125,7 +126,7 @@ async function RefundDetail({ params }: { params: Params }) {
         </Card>
       </div>
 
-      <DecisionCard refund={refund} />
+      <DecisionCard refund={refund} actor={actor} />
 
       <Card
         title="Audit History"
@@ -197,7 +198,10 @@ function ApprovedAmount({ refund }: { refund: Refund }) {
   return <Missing>{refund.status === "rejected" ? "None (rejected)" : "Not decided"}</Missing>;
 }
 
-function DecisionCard({ refund }: { refund: Refund }) {
+function DecisionCard({ refund, actor }: { refund: Refund; actor: CurrentActor }) {
+  // Decisions taken here will be recorded under this name and role.
+  const actingAs = `Acting as ${actor.name} · ${ACTOR_ROLE_LABELS[actor.role]}`;
+
   // Any one of these being set means a reviewer has acted, even if the others are still empty.
   const hasDecision =
     refund.decidedAt !== null ||
@@ -207,7 +211,7 @@ function DecisionCard({ refund }: { refund: Refund }) {
 
   if (!hasDecision) {
     return (
-      <Card title="Decision Information">
+      <Card title="Decision Information" description={actingAs}>
         <EmptyState>
           No decision has been recorded. This refund is currently{" "}
           <span className="font-medium text-slate-700">
@@ -220,7 +224,7 @@ function DecisionCard({ refund }: { refund: Refund }) {
   }
 
   return (
-    <Card title="Decision Information">
+    <Card title="Decision Information" description={actingAs}>
       <FieldList columns={2}>
         <Field label="Decision">
           <StatusBadge status={refund.status} />

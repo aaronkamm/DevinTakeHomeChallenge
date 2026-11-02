@@ -2,6 +2,7 @@ import { asc, count, eq, sql } from "drizzle-orm";
 import { seed } from "drizzle-seed";
 
 import { getDb, type DB } from "../src/lib/db";
+import { AGENTS, FRAUD_ANALYSTS, INTAKE, MANAGERS } from "../src/lib/reviewers";
 import {
   auditEvents,
   refunds,
@@ -164,11 +165,6 @@ const REASONS = Array.from(
   { length: REFUND_COUNT },
   (_, i) => REASON_PROFILES[i % REASON_PROFILES.length].reason,
 );
-
-const AGENTS = ["Maya Chen", "Jordan Lee", "Priya Patel", "Diego Alvarez"];
-const MANAGERS = ["Sam Okafor", "Rachel Kim"];
-const FRAUD_ANALYSTS = ["Elena Novak", "Marcus Webb"];
-const INTAKE = "refund-intake-bot";
 
 // drizzle-seed generates these raw ranges; they are rescaled into each reason's range.
 const RAW_AMOUNT: [number, number] = [1, 10_000];
