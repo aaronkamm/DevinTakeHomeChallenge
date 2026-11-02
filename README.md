@@ -28,6 +28,7 @@ PostgreSQL via [PGlite](https://pglite.dev) (embedded Postgres, no server to ins
 - Schema: `src/lib/schema.ts` — `refunds` and append-only `audit_events` (amounts in cents).
 - Migrations: `drizzle/` (`0001_triggers.sql` is hand-written: `refunds.updated_at` trigger and the append-only guard on `audit_events`).
 - `await getDb()` from `src/lib/db.ts` creates the data directory and applies pending migrations on first access.
+- Read queries live in `src/lib/queries.ts` (server-side only): `listRefunds({ status?, page? })` (newest first, 20 per page, returns `{ items, page, pageSize, total, totalPages }`) and `getRefundWithAuditTrail(id)` (refund + audit events oldest first, or `null`).
 - Data lives in `data/pglite/` (gitignored); override with `DATABASE_DIR`. Delete the directory to reset.
 - PGlite allows one process per data directory — don't point two running servers at the same `DATABASE_DIR`.
 - Sample data: `scripts/seed.ts` uses `drizzle-seed` (fixed seed) to insert 24 refunds and matching `audit_events` (created → escalated/approved/partially_approved/rejected, with actors and roles). It skips if `refunds` already has rows.
