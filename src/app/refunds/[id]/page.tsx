@@ -179,11 +179,7 @@ function Overview({ refund }: { refund: Refund }) {
           {formatCents(refund.requestedAmountCents, refund.currency)}
         </Stat>
         <Stat label="Approved amount">
-          {refund.approvedAmountCents === null ? (
-            <Missing>Not decided</Missing>
-          ) : (
-            formatCents(refund.approvedAmountCents, refund.currency)
-          )}
+          <ApprovedAmount refund={refund} />
         </Stat>
         <Stat label="Risk score">
           <span className="text-lg tabular-nums">
@@ -199,6 +195,14 @@ function Overview({ refund }: { refund: Refund }) {
       </dl>
     </section>
   );
+}
+
+/** `approvedAmountCents` is null both before a decision and after a rejection; label the two cases differently. */
+function ApprovedAmount({ refund }: { refund: Refund }) {
+  if (refund.approvedAmountCents !== null) {
+    return <>{formatCents(refund.approvedAmountCents, refund.currency)}</>;
+  }
+  return <Missing>{refund.status === "rejected" ? "None (rejected)" : "Not decided"}</Missing>;
 }
 
 function DecisionCard({ refund }: { refund: Refund }) {
@@ -233,8 +237,7 @@ function DecisionCard({ refund }: { refund: Refund }) {
           {refund.decidedAt && <Timestamp date={refund.decidedAt} />}
         </Field>
         <Field label="Approved amount">
-          {refund.approvedAmountCents !== null &&
-            formatCents(refund.approvedAmountCents, refund.currency)}
+          <ApprovedAmount refund={refund} />
         </Field>
         <Field label="Decision note" wide>
           {refund.decisionNote}
