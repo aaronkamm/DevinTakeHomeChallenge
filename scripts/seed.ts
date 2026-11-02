@@ -199,9 +199,10 @@ async function seedRefunds(db: DB) {
         decidedAt: null,
       };
 
-      for (const [s, step] of buildTrail(refund, i, approvedPartial).entries()) {
-        // Spread transitions between creation and now so ordering stays realistic.
-        at = Math.min(now - (s + 1) * 60_000, at + (2 + ((i + s) % 5) * 3) * HOUR_MS);
+      const trail = buildTrail(refund, i, approvedPartial);
+      for (const [s, step] of trail.entries()) {
+        // Cap each step a minute per remaining step before now, so timestamps stay strictly increasing.
+        at = Math.min(now - (trail.length - s) * 60_000, at + (2 + ((i + s) % 5) * 3) * HOUR_MS);
         events.push({
           refundId: refund.id,
           action: step.status,
