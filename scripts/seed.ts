@@ -28,16 +28,16 @@ const STATUSES = Object.entries(STATUS_MIX).flatMap(([status, n]) =>
 const REFUND_COUNT = STATUSES.length;
 
 const REASONS = [
-  "Item arrived damaged",
   "Duplicate charge on card",
-  "Service not delivered",
   "Subscription cancelled but still billed",
-  "Wrong item shipped",
   "Charged incorrect amount",
-  "Order cancelled before shipment",
-  "Product not as described",
   "Unauthorized transaction reported by customer",
-  "Late delivery, customer requested refund",
+  "Pending authorization not released",
+  "Transfer failed but account was debited",
+  "FX fee charged at incorrect rate",
+  "Overdraft fee waiver request",
+  "ATM did not dispense cash",
+  "Wire transfer fee charged in error",
 ];
 
 const AGENTS = ["Maya Chen", "Jordan Lee", "Priya Patel", "Diego Alvarez"];
@@ -104,9 +104,9 @@ function buildTrail(refund: Refund, i: number, approvedPartial: number): Step[] 
           actor: decider,
           note: pick(
             [
-              "Outside 30-day refund window",
+              "Reported outside the 60-day dispute window",
               "Customer already received chargeback",
-              "No evidence of defect provided",
+              "Transaction verified as customer-authorized",
             ],
             i,
           ),
