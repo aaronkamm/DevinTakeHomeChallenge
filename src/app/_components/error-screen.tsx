@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { startTransition, useEffect } from "react";
+import { startTransition, useEffect, type MouseEvent } from "react";
 
 import { PageShell } from "@/app/_components/page-shell";
 
@@ -18,7 +18,7 @@ export type ErrorBoundaryProps = {
  * The recovery screen shown by the `error.tsx` boundaries. "Try again" refreshes the route before
  * calling `reset()`: on its own, `reset()` re-renders the server output that already failed, so a
  * database error would just show up again. Boundaries only reset when the pathname changes, so
- * "Return to Refunds" on `/` itself retries too.
+ * "Return to Refunds" on `/` itself resets explicitly instead of letting `Link` navigate.
  */
 export function ErrorScreen({
   error,
@@ -46,6 +46,21 @@ export function ErrorScreen({
       router.refresh();
       reset();
     });
+  }
+
+  function returnToRefunds(event: MouseEvent<HTMLAnchorElement>) {
+    if (pathname !== "/") return;
+    const modified = event.metaKey || event.ctrlKey || event.shiftKey || event.altKey;
+    if (event.button !== 0 || modified) return;
+    event.preventDefault();
+    if (window.location.search) {
+      startTransition(() => {
+        router.push("/");
+        reset();
+      });
+    } else {
+      tryAgain();
+    }
   }
 
   return (
@@ -85,7 +100,7 @@ export function ErrorScreen({
           ) : (
             <Link
               href="/"
-              onClick={pathname === "/" ? tryAgain : undefined}
+              onClick={returnToRefunds}
               className={secondaryButton}
             >
               Return to Refunds
