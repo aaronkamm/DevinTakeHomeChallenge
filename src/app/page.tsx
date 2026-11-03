@@ -3,6 +3,7 @@ import { connection } from "next/server";
 import { Suspense, type ReactNode } from "react";
 
 import { PageShell } from "@/app/_components/page-shell";
+import { RefundsBrowserSkeleton } from "@/app/_components/refunds-browser-skeleton";
 import { RiskScore } from "@/app/_components/risk-score";
 import { STATUS_LABELS, StatusBadge } from "@/app/_components/status-badge";
 import { formatCents, formatDateTime } from "@/lib/format";
@@ -18,9 +19,22 @@ export default function Home({ searchParams }: PageProps<"/">) {
       description="Browse refund requests and select one to review its details."
     >
       <Suspense fallback={<RefundsBrowserSkeleton />}>
-        <RefundsBrowser searchParams={searchParams} />
+        <RefundsBrowserForQuery searchParams={searchParams} />
       </Suspense>
     </PageShell>
+  );
+}
+
+// Changing the filter or page is a navigation to the same route, so the Suspense boundary above
+// is already showing and React would keep the old table on screen until the new one is ready.
+// Keying a boundary on the query mounts a fresh one per filter/page, which shows the skeleton.
+async function RefundsBrowserForQuery({ searchParams }: { searchParams: SearchParams }) {
+  const params = await searchParams;
+  const key = `${firstValue(params.status) ?? ""}|${firstValue(params.page) ?? ""}`;
+  return (
+    <Suspense key={key} fallback={<RefundsBrowserSkeleton />}>
+      <RefundsBrowser searchParams={searchParams} />
+    </Suspense>
   );
 }
 
@@ -221,18 +235,5 @@ function PageLink({
     <Link href={href} className={`${className} text-slate-700 hover:bg-slate-50`}>
       {children}
     </Link>
-  );
-}
-
-function RefundsBrowserSkeleton() {
-  return (
-    <div className="flex flex-col gap-4" aria-busy="true" aria-label="Loading refunds">
-      <div className="h-9 w-96 max-w-full animate-pulse rounded-lg bg-slate-200" />
-      <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-        {Array.from({ length: 8 }, (_, i) => (
-          <div key={i} className="my-3 h-5 animate-pulse rounded bg-slate-100" />
-        ))}
-      </div>
-    </div>
   );
 }
