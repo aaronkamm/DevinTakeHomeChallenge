@@ -6,6 +6,9 @@ import { startTransition, useEffect } from "react";
 
 import { PageShell } from "@/app/_components/page-shell";
 
+const secondaryButton =
+  "inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50";
+
 export type ErrorBoundaryProps = {
   error: Error & { digest?: string };
   reset: () => void;
@@ -22,10 +25,13 @@ export function ErrorScreen({
   title,
   message,
   showBackLink = false,
+  fullReloadHome = false,
 }: ErrorBoundaryProps & {
   title: string;
   message: string;
   showBackLink?: boolean;
+  /** Leave with a full page load rather than a client-side navigation (for `global-error.tsx`). */
+  fullReloadHome?: boolean;
 }) {
   const router = useRouter();
 
@@ -69,12 +75,16 @@ export function ErrorScreen({
           >
             Try again
           </button>
-          <Link
-            href="/"
-            className="inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
-            Return to Refunds
-          </Link>
+          {fullReloadHome ? (
+            // eslint-disable-next-line @next/next/no-html-link-for-pages -- a fresh document load is the point
+            <a href="/" className={secondaryButton}>
+              Return to Refunds
+            </a>
+          ) : (
+            <Link href="/" className={secondaryButton}>
+              Return to Refunds
+            </Link>
+          )}
         </div>
       </section>
     </PageShell>

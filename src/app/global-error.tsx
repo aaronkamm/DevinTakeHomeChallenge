@@ -7,6 +7,7 @@ import "./globals.css";
 /**
  * Catches errors in the root layout itself (e.g. the "Acting as" bar), which `error.tsx` can't.
  * It replaces the root layout, so it renders its own document with the same fonts and styles.
+ * "Return to Refunds" does a full page load: a client-side navigation leaves this boundary showing.
  */
 export default function GlobalError({ error, reset }: ErrorBoundaryProps) {
   return (
@@ -18,6 +19,7 @@ export default function GlobalError({ error, reset }: ErrorBoundaryProps) {
           reset={reset}
           title="Something went wrong"
           message="We couldn't load the dashboard. This is usually temporary, so try again in a moment."
+          fullReloadHome
         />
       </body>
     </html>
