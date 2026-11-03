@@ -7,7 +7,8 @@ import GlobalError from "@/app/global-error";
 import RefundDetailError from "@/app/refunds/[id]/error";
 
 const refresh = vi.fn();
-vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
+let pathname = "/refunds/rf_0001";
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }), usePathname: () => pathname }));
 // next/font needs the Next compiler; the class names don't matter here.
 vi.mock("@/app/fonts", () => ({ fontVariables: "font-vars" }));
 
@@ -15,6 +16,7 @@ const error = Object.assign(new Error("connect ECONNREFUSED"), { digest: "abc123
 
 beforeEach(() => {
   refresh.mockReset();
+  pathname = "/refunds/rf_0001";
   vi.spyOn(console, "error").mockImplementation(() => {});
 });
 
@@ -38,6 +40,20 @@ describe("error boundaries", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
 
+    expect(refresh).toHaveBeenCalledOnce();
+    expect(reset).toHaveBeenCalledOnce();
+  });
+
+  it("Return to Refunds on the browse page itself also retries", () => {
+    const reset = vi.fn();
+    const { unmount } = render(<RootError error={error} reset={reset} />);
+    fireEvent.click(screen.getByRole("link", { name: "Return to Refunds" }));
+    expect(reset).not.toHaveBeenCalled();
+    unmount();
+
+    pathname = "/";
+    render(<RootError error={error} reset={reset} />);
+    fireEvent.click(screen.getByRole("link", { name: "Return to Refunds" }));
     expect(refresh).toHaveBeenCalledOnce();
     expect(reset).toHaveBeenCalledOnce();
   });

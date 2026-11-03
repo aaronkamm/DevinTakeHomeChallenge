@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { startTransition, useEffect } from "react";
 
 import { PageShell } from "@/app/_components/page-shell";
@@ -17,7 +17,8 @@ export type ErrorBoundaryProps = {
 /**
  * The recovery screen shown by the `error.tsx` boundaries. "Try again" refreshes the route before
  * calling `reset()`: on its own, `reset()` re-renders the server output that already failed, so a
- * database error would just show up again.
+ * database error would just show up again. Boundaries only reset when the pathname changes, so
+ * "Return to Refunds" on `/` itself retries too.
  */
 export function ErrorScreen({
   error,
@@ -34,6 +35,7 @@ export function ErrorScreen({
   fullReloadHome?: boolean;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     console.error(error);
@@ -81,7 +83,11 @@ export function ErrorScreen({
               Return to Refunds
             </a>
           ) : (
-            <Link href="/" className={secondaryButton}>
+            <Link
+              href="/"
+              onClick={pathname === "/" ? tryAgain : undefined}
+              className={secondaryButton}
+            >
               Return to Refunds
             </Link>
           )}
