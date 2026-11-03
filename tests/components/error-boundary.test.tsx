@@ -3,10 +3,13 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import RootError from "@/app/error";
+import GlobalError from "@/app/global-error";
 import RefundDetailError from "@/app/refunds/[id]/error";
 
 const refresh = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
+// next/font needs the Next compiler; the class names don't matter here.
+vi.mock("@/app/fonts", () => ({ fontVariables: "font-vars" }));
 
 const error = Object.assign(new Error("connect ECONNREFUSED"), { digest: "abc123" });
 
@@ -59,5 +62,17 @@ describe("error boundaries", () => {
 
     expect(screen.getByRole("heading", { name: "Couldn't load this refund" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Back to Refunds/ })).toHaveAttribute("href", "/");
+  });
+
+  it("global error renders its own document with the same recovery screen", () => {
+    const reset = vi.fn();
+    // Rendered into a div here, so React warns about <html> nesting; console.error is silenced.
+    render(<GlobalError error={error} reset={reset} />);
+
+    expect(screen.getByRole("heading", { name: "Something went wrong" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Return to Refunds" })).toHaveAttribute("href", "/");
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(refresh).toHaveBeenCalledOnce();
+    expect(reset).toHaveBeenCalledOnce();
   });
 });
