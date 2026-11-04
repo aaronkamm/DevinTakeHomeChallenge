@@ -168,11 +168,6 @@ const RAW_RISK: [number, number] = [0, 100];
 const pick = <T>(list: readonly T[], i: number) => list[i % list.length];
 const pad = (n: number) => String(n).padStart(4, "0");
 
-// Mostly USD accounts, plus two each of EUR/GBP/CAD.
-const FOREIGN_CURRENCIES = ["EUR", "GBP", "CAD"];
-const CURRENCIES = Array.from({ length: REFUND_COUNT }, (_, i) =>
-  i < REFUND_COUNT - 2 * FOREIGN_CURRENCIES.length ? "USD" : pick(FOREIGN_CURRENCIES, i),
-);
 const rescale = (raw: number, [rawMin, rawMax]: [number, number], [min, max]: [number, number]) =>
   Math.round(min + ((raw - rawMin) / (rawMax - rawMin)) * (max - min));
 const roundTo = (cents: number, step = 1) => Math.max(step, Math.floor(cents / step) * step);
@@ -280,7 +275,7 @@ async function seedRefunds(db: DB) {
           originalAmountCents: f.int({ minValue: RAW_AMOUNT[0], maxValue: RAW_AMOUNT[1] }),
           requestedAmountCents: f.default({ defaultValue: 1 }),
           approvedAmountCents: f.default({ defaultValue: null }),
-          currency: f.valuesFromArray({ values: CURRENCIES, isUnique: true }),
+          currency: f.default({ defaultValue: "USD" }),
           reason: f.valuesFromArray({ values: REASONS, isUnique: true }),
           status: f.valuesFromArray({ values: STATUSES, isUnique: true }),
           riskScore: f.int({ minValue: RAW_RISK[0], maxValue: RAW_RISK[1] }),

@@ -90,6 +90,6 @@ PostgreSQL via [PGlite](https://pglite.dev) (embedded Postgres, no server to ins
 - Data lives in `data/pglite/` (gitignored); override with `DATABASE_DIR`. Delete the directory to reset.
 - PGlite allows one process per data directory — don't point two running servers at the same `DATABASE_DIR`.
 - Sample data: `scripts/seed.ts` uses `drizzle-seed` (fixed seed) to insert 24 refunds and matching `audit_events` (created → escalated/approved/partially_approved/rejected, with actors and roles). It skips if `refunds` already has rows.
-  - Covers every status and 10 fintech refund reasons (card, ACH, wire, ATM and account-fee cases) with account IDs, merchants, and USD/EUR/GBP/CAD amounts sized to the reason.
+  - Covers every status and 10 fintech refund reasons (card, ACH, wire, ATM and account-fee cases) with account IDs, merchants, and USD amounts sized to the reason.
   - Refunds above the 500.00 agent approval limit or with risk score ≥ 60 escalate to a manager; unauthorized-card claims go to a fraud analyst.
   - To reseed, stop the dev server, delete `data/pglite/`, and rerun. Do this after pulling schema changes too: rows seeded earlier keep placeholder `account_id`/`payment_method` values.
